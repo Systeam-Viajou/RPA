@@ -2,11 +2,12 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 from datetime import datetime
+from pymongo import MongoClient
 
 load_dotenv()
 
 try:
-    conn_db1 = psycopg2.connect(os.getenv('POSTGRES1_URL'))
+    conn_db1 = psycopg2.connect(os.getenv('POSTGRE1_URL'))
     print("Conexão com DB1 estabelecida.")
 except Exception as e:
     print(f"Erro ao conectar ao DB1: {e}")
@@ -17,73 +18,140 @@ try:
 except Exception as e:
     print(f"Erro ao conectar ao DB2: {e}")
 
+try:
+    client = MongoClient(os.getenv('MONGO_HOST'))
+    db_mongo = client[os.getenv('MONGO_DB')]
+    colecao_imagem = db_mongo['imagem']
+    print("Conexão com MongoDB2 estabelecida.")
+except Exception as e:
+    print(f"Erro ao conectar ao DB2: {e}")
+
 cursor_db1 = conn_db1.cursor()
 cursor_db2 = conn_db2.cursor()
 
-#-----PLANO-----
-cursor_db1.execute("""
-    SELECT ID, nome, descricao, livre_propaganda, preco, data_criacao, data_atualizacao, duracao
-    FROM plano
-""")
-planos_bd1 = cursor_db1.fetchall()
+# #-----PLANO-----
+# cursor_db1.execute("""
+#     SELECT ID, nome, descricao, livre_propaganda, preco, data_criacao, data_atualizacao, duracao
+#     FROM plano
+# """)
+# planos_bd1 = cursor_db1.fetchall()
 
-if not planos_bd1:
-    print("Nenhum plano encontrado em DB1.")
-else:
-    print(f"{len(planos_bd1)} planos encontrados em DB1 para processamento.")
+# if not planos_bd1:
+#     print("Nenhum plano encontrado em DB1.")
+# else:
+#     print(f"{len(planos_bd1)} planos encontrados em DB1 para processamento.")
 
-for plano in planos_bd1:
-    id_plano, nome, descricao, livre_propaganda, preco, data_criacao, data_atualizacao, duracao = plano
+# for plano in planos_bd1:
+#     id_plano, nome, descricao, livre_propaganda, preco, data_criacao, data_atualizacao, duracao = plano
 
-    cursor_db2.execute("""
-        SELECT nome, descricao, livre_propaganda, valor, duracao
-        FROM plano WHERE ID = %s
-    """, (id_plano,))
-    plano_bd2 = cursor_db2.fetchone()
+#     cursor_db2.execute("""
+#         SELECT nome, descricao, livre_propaganda, valor, duracao, data_desativacao
+#         FROM plano WHERE ID = %s
+#     """, (id_plano,))
+#     plano_bd2 = cursor_db2.fetchone()
 
-    if plano_bd2:
-        if data_atualizacao is not None:
-            cursor_db2.execute("""
-                UPDATE plano
-                SET nome = %s, descricao = %s, livre_propaganda = %s, valor = %s, duracao = %s
-                WHERE ID = %s
-            """, (nome, descricao, livre_propaganda, preco.replace('$', '').replace(',', ''), duracao, id_plano))
+#     if plano_bd2:
+#         if data_atualizacao is not None and plano_bd2[5] is None:  # Verifica se não está desativado
+#             cursor_db2.execute("""
+#                 UPDATE plano
+#                 SET nome = %s, descricao = %s, livre_propaganda = %s, valor = %s, duracao = %s
+#                 WHERE ID = %s
+#             """, (nome, descricao, livre_propaganda, preco.replace('$', '').replace(',', ''), duracao, id_plano))
 
-            conn_db2.commit()
-            print(f"Plano com ID {id_plano} atualizado no DB2.")
-    else:
-        if data_criacao is not None:
-            preco_formatado = float(preco.replace('$', '').replace(',', ''))
+#             conn_db2.commit()
+#             print(f"Plano com ID {id_plano} atualizado no DB2.")
+#         elif plano_bd2[5] is not None:  # Se estiver desativado, pode ser reativado
+#             cursor_db2.execute("""
+#                 UPDATE plano
+#                 SET nome = %s, descricao = %s, livre_propaganda = %s, valor = %s, duracao = %s, data_desativacao = NULL
+#                 WHERE ID = %s
+#             """, (nome, descricao, livre_propaganda, preco.replace('$', '').replace(',', ''), duracao, id_plano))
+            
+#             conn_db2.commit()
+#             print(f"Plano com ID {id_plano} reativado no DB2.")
+#     else:
+#         if data_criacao is not None:
+#             preco_formatado = float(preco.replace('$', '').replace(',', ''))
 
-            cursor_db2.execute("""
-                INSERT INTO plano (ID, nome, descricao, livre_propaganda, valor, duracao)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (id_plano, nome, descricao, livre_propaganda, preco_formatado, duracao))
+#             cursor_db2.execute("""
+#                 INSERT INTO plano (ID, nome, descricao, livre_propaganda, valor, duracao)
+#                 VALUES (%s, %s, %s, %s, %s, %s)
+#             """, (id_plano, nome, descricao, livre_propaganda, preco_formatado, duracao))
 
-            conn_db2.commit()
-            print(f"Plano com ID {id_plano} inserido no DB2.")
-        else:
-            print(f"Plano com ID {id_plano} não pode ser inserido porque data_criacao é nula.")
+#             conn_db2.commit()
+#             print(f"Plano com ID {id_plano} inserido no DB2.")
+#         else:
+#             print(f"Plano com ID {id_plano} não pode ser inserido porque data_criacao é nula.")
 
-# Marcação de planos desativados em db2
-cursor_db2.execute("SELECT ID FROM plano")
-ids_db2 = {plano[0] for plano in cursor_db2.fetchall()}
-ids_db1 = {plano[0] for plano in planos_bd1}
-ids_para_desativar = ids_db2 - ids_db1
+# # Marcação de planos desativados em db2
+# cursor_db2.execute("SELECT ID FROM plano")
+# ids_db2 = {plano[0] for plano in cursor_db2.fetchall()}
+# ids_db1 = {plano[0] for plano in planos_bd1}
+# ids_para_desativar = ids_db2 - ids_db1
 
-for id_del in ids_para_desativar:
-    cursor_db2.execute("""
-        UPDATE plano
-        SET data_desativacao = NOW()
-        WHERE ID = %s AND data_desativacao IS NULL
-    """, (id_del,))
-    conn_db2.commit()
-    print(f"Plano com ID {id_del} marcado como desativado em DB2.")
+# for id_del in ids_para_desativar:
+#     cursor_db2.execute("""
+#         UPDATE plano
+#         SET data_desativacao = NOW()
+#         WHERE ID = %s AND data_desativacao IS NULL
+#     """, (id_del,))
+#     conn_db2.commit()
+#     print(f"Plano com ID {id_del} marcado como desativado em DB2.")
 
+# -----IMAGEM-----
+# Selecionar dados da tabela imagem no PostgreSQL
+# cursor_db1.execute("""
+#     SELECT url, ID_atracao
+#     FROM imagem
+# """)
+# imagens_bd1 = cursor_db1.fetchall()
+
+# if not imagens_bd1:
+#     print("Nenhuma imagem encontrada em DB1.")
+# else:
+#     print(f"{len(imagens_bd1)} imagens encontradas em DB1 para processamento.")
+
+# # Criar um conjunto de imagens atuais do DB1 (PostgreSQL)
+# imagens_atuais_db1 = {(img[0], img[1]) for img in imagens_bd1}  # Conjunto com tuplas (url, ID_atracao)
+
+# # Inserindo/Atualizando as imagens no MongoDB
+# for imagem in imagens_bd1:
+#     url, id_atracao = imagem
+
+#     # Verificar se a imagem já existe no MongoDB
+#     imagem_existente = colecao_imagem.find_one({"url": url, "id_atracao": id_atracao})
+
+#     if not imagem_existente:
+#         nova_imagem = {
+#             "url": url,
+#             "id_atracao": id_atracao
+#         }
+#         colecao_imagem.insert_one(nova_imagem)
+#         print(f"Imagem com URL {url} e ID_atracao {id_atracao} inserida no MongoDB.")
+#     else:
+#         # Atualiza a imagem apenas se os dados forem diferentes
+#         if imagem_existente['url'] != url or imagem_existente['id_atracao'] != id_atracao:
+#             colecao_imagem.update_one(
+#                 {"url": url, "id_atracao": id_atracao},
+#                 {"$set": {"url": url, "id_atracao": id_atracao}}
+#             )
+#             print(f"Imagem com URL {url} e ID_atracao {id_atracao} atualizada no MongoDB.")
+
+# # Para deletar imagens que foram removidas do DB1 mas ainda existem no MongoDB
+# imagens_mongo = colecao_imagem.find({})  # Todas as imagens no MongoDB
+
+# for imagem_mongo in imagens_mongo:
+#     url = imagem_mongo['url']
+#     id_atracao = imagem_mongo['id_atracao']
+
+#     # Verificar se a imagem está no PostgreSQL (DB1)
+#     if (url, id_atracao) not in imagens_atuais_db1:
+#         # Se não está, excluir do MongoDB
+#         colecao_imagem.delete_one({"url": url, "id_atracao": id_atracao})
+#         print(f"Imagem com URL {url} e ID_atracao {id_atracao} deletada do MongoDB.")
 
 # -----ATRACAO-----
-# Selecio# Seleciona todas as atrações de DB1 para sincronização
-# # Seleciona todas as atrações de DB1
+# Seleciona todas as atrações de DB1
 # cursor_db1.execute("""
 #     SELECT ID, descricao, nome, endereco, acessibilidade, categoria, data_criacao, data_atualizacao
 #     FROM atracao
@@ -178,59 +246,59 @@ for id_del in ids_para_desativar:
 #     conn_db2.commit()
 #     print(f"Categoria com ID {cat_id} removida de DB2, pois ficou órfã.")
 
-# # EVENTOS
-# cursor_db1.execute("""
-#     SELECT ID, data_inicio, preco_pessoa, ID_atracao
-#     FROM eventos
-# """)
-# eventos_bd1 = cursor_db1.fetchall()
+# EVENTOS
+cursor_db1.execute("""
+    SELECT ID, data_inicio, preco_pessoa, ID_atracao
+    FROM eventos
+""")
+eventos_bd1 = cursor_db1.fetchall()
 
-# if not eventos_bd1:
-#     print("Nenhum evento encontrado em DB1.")
-# else:
-#     print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
+if not eventos_bd1:
+    print("Nenhum evento encontrado em DB1.")
+else:
+    print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
 
-# for evento in eventos_bd1:
-#     id_evento, data_inicio, preco_pessoa, id_atracao = evento
+for evento in eventos_bd1:
+    id_evento, data_inicio, preco_pessoa, id_atracao = evento
 
-#     print(f"Processando evento ID {id_evento} do DB1.")
+    print(f"Processando evento ID {id_evento} do DB1.")
 
-#     cursor_db2.execute("""
-#         SELECT ID, data_inicio, preco_pessoa, ID_atracao
-#         FROM evento WHERE ID = %s
-#     """, (id_evento,))
-#     evento_bd2 = cursor_db2.fetchone()
+    cursor_db2.execute("""
+        SELECT ID, data_inicio, preco_pessoa, ID_atracao
+        FROM evento WHERE ID = %s
+    """, (id_evento,))
+    evento_bd2 = cursor_db2.fetchone()
 
-#     if evento_bd2:
-#         print(f"Evento com ID {id_evento} encontrado no DB2.")
+    if evento_bd2:
+        print(f"Evento com ID {id_evento} encontrado no DB2.")
         
-#         data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
-#         preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+        data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
+        preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
 
-#         if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2:
-#             cursor_db2.execute("""
-#                 UPDATE evento
-#                 SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s
-#                 WHERE ID = %s
-#             """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
+        if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2:
+            cursor_db2.execute("""
+                UPDATE evento
+                SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s
+                WHERE ID = %s
+            """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
 
-#             conn_db2.commit()
-#             print(f"Evento com ID {id_evento} atualizado no DB2")
-#     else:
-#         print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
+            conn_db2.commit()
+            print(f"Evento com ID {id_evento} atualizado no DB2")
+    else:
+        print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
         
-#         if data_inicio is not None and preco_pessoa is not None:
-#             preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+        if data_inicio is not None and preco_pessoa is not None:
+            preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
 
-#             cursor_db2.execute("""
-#                 INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
-#                 VALUES (%s, %s, %s, %s)
-#             """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
+            cursor_db2.execute("""
+                INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
+                VALUES (%s, %s, %s, %s)
+            """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
 
-#             conn_db2.commit()
-#             print(f"Evento com ID {id_evento} inserido no DB2.")
-#         else:
-#             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
+            conn_db2.commit()
+            print(f"Evento com ID {id_evento} inserido no DB2.")
+        else:
+            print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
 # # EXCURSÕES
 # cursor_db1.execute("""
 #     SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
