@@ -150,8 +150,8 @@ cursor_db2 = conn_db2.cursor()
 #         colecao_imagem.delete_one({"url": url, "id_atracao": id_atracao})
 #         print(f"Imagem com URL {url} e ID_atracao {id_atracao} deletada do MongoDB.")
 
-# -----ATRACAO-----
-# Seleciona todas as atrações de DB1
+# # -----ATRACAO-----
+# # Seleciona todas as atrações de DB1
 # cursor_db1.execute("""
 #     SELECT ID, descricao, nome, endereco, acessibilidade, categoria, data_criacao, data_atualizacao
 #     FROM atracao
@@ -246,119 +246,120 @@ cursor_db2 = conn_db2.cursor()
 #     conn_db2.commit()
 #     print(f"Categoria com ID {cat_id} removida de DB2, pois ficou órfã.")
 
-# EVENTOS
+# # EVENTOS
+# cursor_db1.execute("""
+#     SELECT ID, data_inicio, preco_pessoa, ID_atracao
+#     FROM eventos
+# """)
+# eventos_bd1 = cursor_db1.fetchall()
+
+# if not eventos_bd1:
+#     print("Nenhum evento encontrado em DB1.")
+# else:
+#     print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
+
+# for evento in eventos_bd1:
+#     id_evento, data_inicio, preco_pessoa, id_atracao = evento
+
+#     print(f"Processando evento ID {id_evento} do DB1.")
+
+#     cursor_db2.execute("""
+#         SELECT ID, data_inicio, preco_pessoa, ID_atracao
+#         FROM evento WHERE ID = %s
+#     """, (id_evento,))
+#     evento_bd2 = cursor_db2.fetchone()
+
+#     if evento_bd2:
+#         print(f"Evento com ID {id_evento} encontrado no DB2.")
+        
+#         data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
+#         preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+
+#         if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2:
+#             cursor_db2.execute("""
+#                 UPDATE evento
+#                 SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s
+#                 WHERE ID = %s
+#             """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
+
+#             conn_db2.commit()
+#             print(f"Evento com ID {id_evento} atualizado no DB2")
+#     else:
+#         print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
+        
+#         if data_inicio is not None and preco_pessoa is not None:
+#             preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+
+#             cursor_db2.execute("""
+#                 INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
+#                 VALUES (%s, %s, %s, %s)
+#             """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
+
+#             conn_db2.commit()
+#             print(f"Evento com ID {id_evento} inserido no DB2.")
+#         else:
+#             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
+
+# EXCURSÕES
 cursor_db1.execute("""
-    SELECT ID, data_inicio, preco_pessoa, ID_atracao
-    FROM eventos
+    SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
+    FROM excursao
 """)
-eventos_bd1 = cursor_db1.fetchall()
+excursao_bd1 = cursor_db1.fetchall()
 
-if not eventos_bd1:
-    print("Nenhum evento encontrado em DB1.")
+if not excursao_bd1:
+    print("Nenhuma excursão encontrada em DB1.")
 else:
-    print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
+    print(f"{len(excursao_bd1)} excursões encontradas em DB1.")
 
-for evento in eventos_bd1:
-    id_evento, data_inicio, preco_pessoa, id_atracao = evento
+for excursao in excursao_bd1:
+    id_excursao, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, id_atracao = excursao
 
-    print(f"Processando evento ID {id_evento} do DB1.")
+    print(f"Processando excursão ID {id_excursao} do DB1.")
 
     cursor_db2.execute("""
-        SELECT ID, data_inicio, preco_pessoa, ID_atracao
-        FROM evento WHERE ID = %s
-    """, (id_evento,))
-    evento_bd2 = cursor_db2.fetchone()
+        SELECT ID FROM empresa WHERE nome = %s
+    """, (nome_empresa,))
+    empresa_bd2 = cursor_db2.fetchone()
 
-    if evento_bd2:
-        print(f"Evento com ID {id_evento} encontrado no DB2.")
-        
-        data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
-        preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
-
-        if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2:
-            cursor_db2.execute("""
-                UPDATE evento
-                SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s
-                WHERE ID = %s
-            """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
-
-            conn_db2.commit()
-            print(f"Evento com ID {id_evento} atualizado no DB2")
+    if empresa_bd2:
+        id_empresa = empresa_bd2[0]
+        print(f"Empresa {nome_empresa} encontrada no DB2 com ID {id_empresa}.")
     else:
-        print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
+        print(f"Empresa {nome_empresa} não encontrada no DB2. Inserindo nova empresa.")
         
-        if data_inicio is not None and preco_pessoa is not None:
-            preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
-
-            cursor_db2.execute("""
-                INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
-                VALUES (%s, %s, %s, %s)
-            """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
-
-            conn_db2.commit()
-            print(f"Evento com ID {id_evento} inserido no DB2.")
-        else:
-            print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
-# # EXCURSÕES
-# cursor_db1.execute("""
-#     SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
-#     FROM excursao
-# """)
-# excursao_bd1 = cursor_db1.fetchall()
-
-# if not excursao_bd1:
-#     print("Nenhuma excursão encontrada em DB1.")
-# else:
-#     print(f"{len(excursao_bd1)} excursões encontradas em DB1.")
-
-# for excursao in excursao_bd1:
-#     id_excursao, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, id_atracao = excursao
-
-#     print(f"Processando excursão ID {id_excursao} do DB1.")
-
-#     cursor_db2.execute("""
-#         SELECT ID FROM empresa WHERE nome = %s
-#     """, (nome_empresa,))
-#     empresa_bd2 = cursor_db2.fetchone()
-
-#     if empresa_bd2:
-#         id_empresa = empresa_bd2[0]
-#         print(f"Empresa {nome_empresa} encontrada no DB2 com ID {id_empresa}.")
-#     else:
-#         print(f"Empresa {nome_empresa} não encontrada no DB2. Inserindo nova empresa.")
+        cursor_db2.execute("""
+            INSERT INTO empresa (nome, site_empresa)
+            VALUES (%s, %s) RETURNING ID
+        """, (nome_empresa, site))
         
-#         cursor_db2.execute("""
-#             INSERT INTO empresa (nome, site_empresa)
-#             VALUES (%s, %s) RETURNING ID
-#         """, (nome_empresa, site))
-        
-#         id_empresa = cursor_db2.fetchone()[0]
-#         conn_db2.commit()
-#         print(f"Empresa {nome_empresa} inserida no DB2 com ID {id_empresa}.")
+        id_empresa = cursor_db2.fetchone()[0]
+        conn_db2.commit()
+        print(f"Empresa {nome_empresa} inserida no DB2 com ID {id_empresa}.")
 
-#     cursor_db2.execute("""
-#         SELECT ID FROM excursao WHERE ID = %s
-#     """, (id_excursao,))
-#     excursao_bd2 = cursor_db2.fetchone()
+    cursor_db2.execute("""
+        SELECT ID FROM excursao WHERE ID = %s
+    """, (id_excursao,))
+    excursao_bd2 = cursor_db2.fetchone()
 
-#     preco_total_float = float(preco_total.replace('$', '').replace(',', ''))
+    preco_total_float = float(preco_total.replace('$', '').replace(',', ''))
 
-#     if excursao_bd2:
-#         print(f"Excursão com ID {id_excursao} já existe no DB2.")
-#         cursor_db2.execute("""
-#             UPDATE excursao
-#             SET capacidade = %s, qntd_pessoas = %s, preco_total = %s, data_inicio = %s, data_termino = %s, ID_empresa = %s
-#             WHERE ID = %s
-#         """, (capacidade, duracao, preco_total_float, data_inicio, data_termino, id_empresa, id_excursao))
+    if excursao_bd2:
+        print(f"Excursão com ID {id_excursao} já existe no DB2.")
+        cursor_db2.execute("""
+            UPDATE excursao
+            SET capacidade = %s, qntd_pessoas = %s, preco_total = %s, data_inicio = %s, data_termino = %s, ID_empresa = %s
+            WHERE ID = %s
+        """, (capacidade, duracao, preco_total_float, data_inicio, data_termino, id_empresa, id_excursao))
 
-#         conn_db2.commit()
-#         print(f"Excursão com ID {id_excursao} atualizada no DB2.")
-#     else:
-#         print(f"Excursão com ID {id_excursao} não encontrada no DB2. Inserindo nova excursão.")
-#         cursor_db2.execute("""
-#             INSERT INTO excursao (ID, capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa)
-#             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-#         """, (id_excursao, capacidade, duracao, preco_total_float, data_inicio, data_termino, id_atracao, id_empresa))
+        conn_db2.commit()
+        print(f"Excursão com ID {id_excursao} atualizada no DB2.")
+    else:
+        print(f"Excursão com ID {id_excursao} não encontrada no DB2. Inserindo nova excursão.")
+        cursor_db2.execute("""
+            INSERT INTO excursao (ID, capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (id_excursao, capacidade, duracao, preco_total_float, data_inicio, data_termino, id_atracao, id_empresa))
         
 #         conn_db2.commit()
 #         print(f"Excursão com ID {id_excursao} inserida no DB2.")
