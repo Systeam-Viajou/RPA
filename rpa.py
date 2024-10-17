@@ -401,39 +401,57 @@ cursor_db2 = conn_db2.cursor()
 #         conn_db2.commit()
 #         print(f"Nova excursão criada e excursão ID {id_excursao_bd2} desativada no DB2.")
 # # PONTOS TURÍSTICOS
-# cursor_db1.execute("""
-#     SELECT ID, capacidade, preco_entrada, ID_atracao, data_criacao, data_atualizacao
-#     FROM pontos_turisticos
-# """)
-# pontos_bd1 = cursor_db1.fetchall()
+# # Seleciona pontos turísticos do db1
+cursor_db1.execute("""
+    SELECT ID, capacidade, preco_entrada, ID_atracao, data_criacao, data_atualizacao
+    FROM pontos_turisticos
+""")
+pontos_bd1 = cursor_db1.fetchall()
 
-# if not pontos_bd1:
-#     print("Nenhum ponto turístico encontrado em DB1.")
-# else:
-#     print(f"{len(pontos_bd1)} pontos turísticos encontrados em DB1.")
+if not pontos_bd1:
+    print("Nenhum ponto turístico encontrado em DB1.")
+else:
+    print(f"{len(pontos_bd1)} pontos turísticos encontrados em DB1.")
 
-# for ponto in pontos_bd1:
-#     id_ponto, capacidade, preco_entrada, id_atracao, data_criacao, data_atualizacao = ponto
+for ponto in pontos_bd1:
+    id_ponto, capacidade, preco_entrada, id_atracao, data_criacao, data_atualizacao = ponto
 
-#     print(f"Processando ponto turístico ID {id_ponto} do DB1.")
+    print(f"Processando ponto turístico ID {id_ponto} do DB1.")
 
-#     cursor_db2.execute("""
-#         SELECT ID FROM ponto_turistico WHERE ID_atracao = %s
-#     """, (id_atracao,))
-#     ponto_bd2 = cursor_db2.fetchone()
+    # Verifica se o ponto turístico já existe no db2
+    cursor_db2.execute("""
+        SELECT ID, data_desativacao FROM ponto_turistico WHERE ID = %s
+    """, (id_ponto,))
+    ponto_bd2 = cursor_db2.fetchone()
 
-#     if ponto_bd2:
-#         print(f"Ponto turístico com ID_atracao {id_atracao} já existe no DB2.")
-#     else:
-#         print(f"Ponto turístico com ID_atracao {id_atracao} não encontrado no DB2. Inserindo novo ponto turístico.")
-#         cursor_db2.execute("""
-#             INSERT INTO ponto_turistico (ID_atracao)
-#             VALUES (%s)
-#         """, (id_atracao,))
-        
-#         conn_db2.commit()
-#         print(f"Ponto turístico com ID_atracao {id_atracao} inserido no DB2.")
-# TOUR VIRTUAL
+    if ponto_bd2:
+        if ponto_bd2[1] is None:  # Ponto está ativo
+            print(f"Ponto turístico ID {id_ponto} encontrado no DB2 e ativo. Atualizando informações.")
+            cursor_db2.execute("""
+                UPDATE ponto_turistico 
+                SET capacidade = %s, preco_entrada = %s, data_atualizacao = %s
+                WHERE ID = %s
+            """, (capacidade, preco_entrada, data_atualizacao, id_ponto))
+            conn_db2.commit()
+            print(f"Ponto turístico ID {id_ponto} atualizado no DB2.")
+        else:  # Ponto está inativo, reativá-lo
+            print(f"Ponto turístico ID {id_ponto} encontrado no DB2, mas inativo. Reativando e atualizando.")
+            cursor_db2.execute("""
+                UPDATE ponto_turistico 
+                SET capacidade = %s, preco_entrada = %s, data_atualizacao = %s, data_desativacao = NULL
+                WHERE ID = %s
+            """, (capacidade, preco_entrada, data_atualizacao, id_ponto))
+            conn_db2.commit()
+            print(f"Ponto turístico ID {id_ponto} reativado e atualizado no DB2.")
+    else:
+        # Insere novo ponto turístico no db2
+        print(f"Ponto turístico ID {id_ponto} não encontrado no DB2. Inserindo como novo ponto turístico.")
+        cursor_db2.execute("""
+            INSERT INTO ponto_turistico (ID, ID_atracao, capacidade, preco_entrada, data_criacao, data_atualizacao, data_desativacao)
+            VALUES (%s, %s, %s, %s, %s, %s, NULL)
+        """, (id_ponto, id_atracao, capacidade, preco_entrada, data_criacao, data_atualizacao))
+        conn_db2.commit()
+        print(f"Ponto turístico ID {id_ponto} inserido no DB2.")
 
 cursor_db1.close()
 cursor_db2.close()
