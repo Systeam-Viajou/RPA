@@ -300,69 +300,106 @@ cursor_db2 = conn_db2.cursor()
 #         else:
 #             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
 
-# EXCURSÕES
-cursor_db1.execute("""
-    SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
-    FROM excursao
-""")
-excursao_bd1 = cursor_db1.fetchall()
+# # EXCURSÕES
+# cursor_db1.execute("""
+#     SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
+#     FROM excursao
+# """)
+# excursao_bd1 = cursor_db1.fetchall()
 
-if not excursao_bd1:
-    print("Nenhuma excursão encontrada em DB1.")
-else:
-    print(f"{len(excursao_bd1)} excursões encontradas em DB1.")
+# if not excursao_bd1:
+#     print("Nenhuma excursão encontrada em DB1.")
+# else:
+#     print(f"{len(excursao_bd1)} excursões encontradas em DB1.")
 
-for excursao in excursao_bd1:
-    id_excursao, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, id_atracao = excursao
+# # Obter IDs das excursões existentes no DB2 para tratar remoção
+# cursor_db2.execute("""
+#     SELECT ID FROM excursao WHERE data_desativacao IS NULL
+# """)
+# excursao_ativas_bd2 = [row[0] for row in cursor_db2.fetchall()]
 
-    print(f"Processando excursão ID {id_excursao} do DB1.")
+# # Processar excursões do DB1
+# for excursao in excursao_bd1:
+#     id_excursao, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, id_atracao = excursao
 
-    cursor_db2.execute("""
-        SELECT ID FROM empresa WHERE nome = %s
-    """, (nome_empresa,))
-    empresa_bd2 = cursor_db2.fetchone()
+#     print(f"Processando excursão ID {id_excursao} do DB1.")
 
-    if empresa_bd2:
-        id_empresa = empresa_bd2[0]
-        print(f"Empresa {nome_empresa} encontrada no DB2 com ID {id_empresa}.")
-    else:
-        print(f"Empresa {nome_empresa} não encontrada no DB2. Inserindo nova empresa.")
-        
-        cursor_db2.execute("""
-            INSERT INTO empresa (nome, site_empresa)
-            VALUES (%s, %s) RETURNING ID
-        """, (nome_empresa, site))
-        
-        id_empresa = cursor_db2.fetchone()[0]
-        conn_db2.commit()
-        print(f"Empresa {nome_empresa} inserida no DB2 com ID {id_empresa}.")
+#     # Verificar se a empresa já existe no DB2
+#     cursor_db2.execute("""
+#         SELECT ID FROM empresa WHERE nome = %s
+#     """, (nome_empresa,))
+#     empresa_bd2 = cursor_db2.fetchone()
 
-    cursor_db2.execute("""
-        SELECT ID FROM excursao WHERE ID = %s
-    """, (id_excursao,))
-    excursao_bd2 = cursor_db2.fetchone()
+#     if empresa_bd2:
+#         id_empresa = empresa_bd2[0]
+#         print(f"Empresa {nome_empresa} encontrada no DB2 com ID {id_empresa}.")
+#     else:
+#         print(f"Empresa {nome_empresa} não encontrada no DB2. Inserindo nova empresa.")
+#         cursor_db2.execute("""
+#             INSERT INTO empresa (nome, site_empresa)
+#             VALUES (%s, %s) RETURNING ID
+#         """, (nome_empresa, site))
+#         id_empresa = cursor_db2.fetchone()[0]
+#         conn_db2.commit()
+#         print(f"Empresa {nome_empresa} inserida no DB2 com ID {id_empresa}.")
 
-    preco_total_float = float(preco_total.replace('$', '').replace(',', ''))
+#     # Verificar se a excursão já existe no DB2
+#     cursor_db2.execute("""
+#         SELECT ID, data_desativacao FROM excursao WHERE ID = %s
+#     """, (id_excursao,))
+#     excursao_bd2 = cursor_db2.fetchone()
 
-    if excursao_bd2:
-        print(f"Excursão com ID {id_excursao} já existe no DB2.")
-        cursor_db2.execute("""
-            UPDATE excursao
-            SET capacidade = %s, qntd_pessoas = %s, preco_total = %s, data_inicio = %s, data_termino = %s, ID_empresa = %s
-            WHERE ID = %s
-        """, (capacidade, duracao, preco_total_float, data_inicio, data_termino, id_empresa, id_excursao))
+#     preco_total_float = float(preco_total.replace('$', '').replace(',', ''))
 
-        conn_db2.commit()
-        print(f"Excursão com ID {id_excursao} atualizada no DB2.")
-    else:
-        print(f"Excursão com ID {id_excursao} não encontrada no DB2. Inserindo nova excursão.")
-        cursor_db2.execute("""
-            INSERT INTO excursao (ID, capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (id_excursao, capacidade, duracao, preco_total_float, data_inicio, data_termino, id_atracao, id_empresa))
-        
+#     if excursao_bd2:
+#         # Se excursão já existe e está ativa
+#         if excursao_bd2[1] is None:
+#             print(f"Atualizando excursão ID {id_excursao} no DB2.")
+#             cursor_db2.execute("""
+#                 UPDATE excursao
+#                 SET capacidade = %s, qntd_pessoas = %s, preco_total = %s, 
+#                     data_inicio = %s, data_termino = %s, ID_empresa = %s
+#                 WHERE ID = %s
+#             """, (capacidade, duracao, preco_total_float, data_inicio, data_termino, id_empresa, id_excursao))
+#         else:
+#             print(f"Excursão ID {id_excursao} já está desativada no DB2.")
+#     else:
+#         print(f"Excursão com ID {id_excursao} não encontrada no DB2. Inserindo nova excursão.")
+#         cursor_db2.execute("""
+#             INSERT INTO excursao (ID, capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa)
+#             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+#         """, (id_excursao, capacidade, duracao, preco_total_float, data_inicio, data_termino, id_atracao, id_empresa))
 #         conn_db2.commit()
 #         print(f"Excursão com ID {id_excursao} inserida no DB2.")
+
+# # Realizar soft delete e criar novo registro com data_desativacao NULL
+# excursao_ids_db1 = [excursao[0] for excursao in excursao_bd1]
+# for id_excursao_bd2 in excursao_ativas_bd2:
+#     if id_excursao_bd2 not in excursao_ids_db1:
+#         print(f"Desativando excursão ID {id_excursao_bd2} e criando novo registro.")
+
+#         # Atualizar data_desativacao do registro antigo
+#         cursor_db2.execute("""
+#             UPDATE excursao 
+#             SET data_desativacao = CURRENT_TIMESTAMP
+#             WHERE ID = %s
+#         """, (id_excursao_bd2,))
+        
+#         # Buscar dados da excursão original para criar nova entrada
+#         cursor_db2.execute("""
+#             SELECT capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa
+#             FROM excursao
+#             WHERE ID = %s
+#         """, (id_excursao_bd2,))
+#         excursao_data = cursor_db2.fetchone()
+
+#         # Criar novo registro de excursão sem data_desativacao
+#         cursor_db2.execute("""
+#             INSERT INTO excursao (capacidade, qntd_pessoas, preco_total, data_inicio, data_termino, ID_atracao, ID_empresa, data_desativacao)
+#             VALUES (%s, %s, %s, %s, %s, %s, %s, NULL)
+#         """, (*excursao_data,))
+#         conn_db2.commit()
+#         print(f"Nova excursão criada e excursão ID {id_excursao_bd2} desativada no DB2.")
 # # PONTOS TURÍSTICOS
 # cursor_db1.execute("""
 #     SELECT ID, capacidade, preco_entrada, ID_atracao, data_criacao, data_atualizacao
@@ -396,6 +433,7 @@ for excursao in excursao_bd1:
         
 #         conn_db2.commit()
 #         print(f"Ponto turístico com ID_atracao {id_atracao} inserido no DB2.")
+# TOUR VIRTUAL
 
 cursor_db1.close()
 cursor_db2.close()
