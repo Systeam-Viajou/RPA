@@ -246,7 +246,7 @@ cursor_db2 = conn_db2.cursor()
 #     conn_db2.commit()
 #     print(f"Categoria com ID {cat_id} removida de DB2, pois ficou órfã.")
 
-# # EVENTOS
+# -----EVENTO-----
 # cursor_db1.execute("""
 #     SELECT ID, data_inicio, preco_pessoa, ID_atracao
 #     FROM eventos
@@ -300,7 +300,7 @@ cursor_db2 = conn_db2.cursor()
 #         else:
 #             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
 
-# # EXCURSÕES
+# #-----EXCURSAO-----
 # cursor_db1.execute("""
 #     SELECT ID, nome_empresa, capacidade, duracao, site, preco_total, data_inicio, data_termino, ID_atracao
 #     FROM excursao
