@@ -247,58 +247,87 @@ cursor_db2 = conn_db2.cursor()
 #     print(f"Categoria com ID {cat_id} removida de DB2, pois ficou órfã.")
 
 # -----EVENTO-----
-# cursor_db1.execute("""
-#     SELECT ID, data_inicio, preco_pessoa, ID_atracao
-#     FROM eventos
-# """)
-# eventos_bd1 = cursor_db1.fetchall()
+cursor_db1.execute("""
+    SELECT ID, data_inicio, preco_pessoa, ID_atracao
+    FROM eventos
+""")
+eventos_bd1 = cursor_db1.fetchall()
 
-# if not eventos_bd1:
-#     print("Nenhum evento encontrado em DB1.")
-# else:
-#     print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
+if not eventos_bd1:
+    print("Nenhum evento encontrado em DB1.")
+else:
+    print(f"{len(eventos_bd1)} eventos encontrados em DB1.")
 
-# for evento in eventos_bd1:
-#     id_evento, data_inicio, preco_pessoa, id_atracao = evento
+# Processando eventos do DB1
+for evento in eventos_bd1:
+    id_evento, data_inicio, preco_pessoa, id_atracao = evento
 
-#     print(f"Processando evento ID {id_evento} do DB1.")
+    print(f"Processando evento ID {id_evento} do DB1.")
 
-#     cursor_db2.execute("""
-#         SELECT ID, data_inicio, preco_pessoa, ID_atracao
-#         FROM evento WHERE ID = %s
-#     """, (id_evento,))
-#     evento_bd2 = cursor_db2.fetchone()
+    # Verificando se o evento existe no DB2
+    cursor_db2.execute("""
+        SELECT ID, data_inicio, preco_pessoa, ID_atracao, data_desativacao
+        FROM evento WHERE ID = %s
+    """, (id_evento,))
+    evento_bd2 = cursor_db2.fetchone()
 
-#     if evento_bd2:
-#         print(f"Evento com ID {id_evento} encontrado no DB2.")
+    # Convertendo preço para float
+    preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', '').strip())
+
+    if evento_bd2:
+        print(f"Evento com ID {id_evento} encontrado no DB2.")
+        data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2, data_desativacao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3], evento_bd2[4]
+
+        # Atualizando evento se houver diferenças
+        if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2 or data_desativacao_bd2 is not None:
+            cursor_db2.execute("""
+                UPDATE evento
+                SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s, data_desativacao = NULL
+                WHERE ID = %s
+            """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
+            
+            # Atualizando o ID_tipo da atração para 2 (Evento)
+            cursor_db2.execute("UPDATE atracao SET ID_tipo = 2 WHERE ID = %s;", (id_atracao,))
+            conn_db2.commit()
+
+            print(f"Evento com ID {id_evento} atualizado no DB2 e tipo da atração atualizado para 'Evento'.")
+    else:
+        print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserção:")
         
-#         data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
-#         preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+        if data_inicio is not None and preco_pessoa is not None:
+            # Inserindo o evento no DB2
+            cursor_db2.execute("""
+                INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
+                VALUES (%s, %s, %s, %s)
+            """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
 
-#         if data_inicio != data_inicio_bd2 or preco_pessoa_float != preco_pessoa_bd2 or id_atracao != id_atracao_bd2:
-#             cursor_db2.execute("""
-#                 UPDATE evento
-#                 SET data_inicio = %s, preco_pessoa = %s, ID_atracao = %s
-#                 WHERE ID = %s
-#             """, (data_inicio, preco_pessoa_float, id_atracao, id_evento))
+            # Atualizando o ID_tipo da atração para 2 (Evento)
+            cursor_db2.execute("UPDATE atracao SET ID_tipo = 2 WHERE ID = %s;", (id_atracao,))
+            conn_db2.commit()
 
-#             conn_db2.commit()
-#             print(f"Evento com ID {id_evento} atualizado no DB2")
-#     else:
-#         print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
-        
-#         if data_inicio is not None and preco_pessoa is not None:
-#             preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+            print(f"Evento com ID {id_evento} inserido no DB2 e tipo da atração atualizado para 'Evento'.")
+        else:
+            print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
 
-#             cursor_db2.execute("""
-#                 INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
-#                 VALUES (%s, %s, %s, %s)
-#             """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
+# Garantindo Soft Delete ao sincronizar com DB1
+# Selecionando IDs de eventos que foram deletados no DB1
+cursor_db2.execute("""
+    SELECT ID FROM evento WHERE ID NOT IN (SELECT ID FROM eventos)
+""")
+eventos_deletados_bd1 = cursor_db2.fetchall()
 
-#             conn_db2.commit()
-#             print(f"Evento com ID {id_evento} inserido no DB2.")
-#         else:
-#             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
+for evento_deletado in eventos_deletados_bd1:
+    id_evento_deletado = evento_deletado[0]
+
+    # Marcando o evento como desativado em vez de deletar completamente
+    cursor_db2.execute("""
+        UPDATE evento
+        SET data_desativacao = NOW()
+        WHERE ID = %s
+    """, (id_evento_deletado,))
+    conn_db2.commit()
+
+    print(f"Evento com ID {id_evento_deletado} marcado como desativado (soft delete) no DB2.")
 
 # #-----EXCURSAO-----
 # cursor_db1.execute("""
