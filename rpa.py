@@ -263,6 +263,7 @@ cursor_db2 = conn_db2.cursor()
 
 #     print(f"Processando evento ID {id_evento} do DB1.")
 
+#     # Verifica se o evento já existe no DB2
 #     cursor_db2.execute("""
 #         SELECT ID, data_inicio, preco_pessoa, ID_atracao
 #         FROM evento WHERE ID = %s
@@ -270,8 +271,6 @@ cursor_db2 = conn_db2.cursor()
 #     evento_bd2 = cursor_db2.fetchone()
 
 #     if evento_bd2:
-#         print(f"Evento com ID {id_evento} encontrado no DB2.")
-        
 #         data_inicio_bd2, preco_pessoa_bd2, id_atracao_bd2 = evento_bd2[1], evento_bd2[2], evento_bd2[3]
 #         preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
 
@@ -285,20 +284,24 @@ cursor_db2 = conn_db2.cursor()
 #             conn_db2.commit()
 #             print(f"Evento com ID {id_evento} atualizado no DB2")
 #     else:
-#         print(f"Evento com ID {id_evento} não encontrado no DB2. Preparando para inserir:")
-        
 #         if data_inicio is not None and preco_pessoa is not None:
 #             preco_pessoa_float = float(preco_pessoa.replace('$', '').replace(',', ''))
+#         cursor_db2.execute("""
+#             INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
+#             VALUES (%s, %s, %s, %s)
+#         """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
+#         conn_db2.commit()
+#         print(f"Evento com ID {id_evento} inserido no DB2.")
 
-#             cursor_db2.execute("""
-#                 INSERT INTO evento (ID, data_inicio, preco_pessoa, ID_atracao)
-#                 VALUES (%s, %s, %s, %s)
-#             """, (id_evento, data_inicio, preco_pessoa_float, id_atracao))
+#     # Atualiza o ID_tipo para 1 na atração associada ao evento
+#     cursor_db2.execute("""
+#         UPDATE atracao
+#         SET ID_tipo = 1
+#         WHERE ID = %s
+#     """, (id_atracao,))
+#     conn_db2.commit()
+#     print(f"ID_tipo da atração ID {id_atracao} atualizado para 1.")
 
-#             conn_db2.commit()
-#             print(f"Evento com ID {id_evento} inserido no DB2.")
-#         else:
-#             print(f"Evento com ID {id_evento} não pode ser inserido porque data_inicio ou preco_pessoa são nulos.")
 
 # # EXCURSÕES
 # cursor_db1.execute("""
