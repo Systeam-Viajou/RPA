@@ -1,0 +1,63 @@
+[
+    {
+        "titulo": "Novo evento chegando!",
+        "descricao": "Participe dos eventos exclusivos disponíveis agora no app.",
+        "categoria": "evento"
+    },
+    {
+        "titulo": "Fique por dentro dos eventos!",
+        "descricao": "Não perca os eventos mais esperados. Veja os detalhes no app.",
+        "categoria": "evento"
+    },
+    {
+        "titulo": "Eventos ao vivo esperando por você!",
+        "descricao": "Entre no app e confira os eventos ao vivo que estão acontecendo agora.",
+        "categoria": "evento"
+    },
+    
+    {
+        "titulo": "Explore novos tours virtuais!",
+        "descricao": "Descubra novos destinos incríveis em tours virtuais. Confira no app!",
+        "categoria": "tour"
+    },
+    {
+        "titulo": "Seu próximo tour está pronto!",
+        "descricao": "Entre no app e veja os tours disponíveis para você agora mesmo.",
+        "categoria": "tour"
+    },
+    {
+        "titulo": "Conheça novos pontos turísticos!",
+        "descricao": "Explore novos lugares e viva experiências únicas com nossos tours.",
+        "categoria": "tour"
+    },
+    {
+        "titulo": "Atualizações importantes para você!",
+        "descricao": "Há novidades no app. Volte e confira as últimas atualizações.",
+        "categoria": "aviso"
+    },
+    {
+        "titulo": "Mantenha-se informado!",
+        "descricao": "Temos novos conteúdos para você explorar. Veja no app agora!",
+        "categoria": "aviso"
+    },
+    {
+        "titulo": "Mantenha-se atualizado!",
+        "descricao": "Volte ao app para ficar por dentro dos próximos eventos e notificações importantes.",
+        "categoria": "aviso"
+    },
+    {
+        "titulo": "Excursões incríveis te esperam!",
+        "descricao": "Reserve sua vaga para as próximas excursões disponíveis no app.",
+        "categoria": "excursão"
+    },
+    {
+        "titulo": "Participe da próxima excursão!",
+        "descricao": "As excursões mais emocionantes estão à sua espera. Veja os detalhes no app.",
+        "categoria": "excursão"
+    },
+    {
+        "titulo": "Prepare-se para sua próxima aventura!",
+        "descricao": "Há novas excursões esperando por você. Não perca tempo, confira no app!",
+        "categoria": "excursão"
+    }
+]
