@@ -25,6 +25,6 @@ jobs:
     - name: Deploy no EC2 -AWS
       run: |
             echo "Conectando no EC2"
-            echo "${{secrets.VIAJOU-CHAVE}}" > private_key && chmod 600 private_key
-            ssh -o StrictHostKeyChecking=no -i private_key "${{secrets.VIAJOU-HOST}}" "
+            echo "${{secrets.VIAJOU_CHAVE}}" > private_key && chmod 600 private_key
+            ssh -o StrictHostKeyChecking=no -i private_key "${{secrets.VIAJOU_HOST}}" "
                    cd RPA/;git pull;./start.sh"
