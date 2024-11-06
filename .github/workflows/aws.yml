@@ -1,8 +1,8 @@
 name: PipelineRPA
 
 on:
-  push:
-    branches: [ "dev" ]
+  pull_request:
+    branches: [ "main" ]
 
 
 jobs:
@@ -27,4 +27,4 @@ jobs:
             echo "Conectando no EC2"
             echo "${{secrets.VIAJOU_CHAVE}}" > private_key && chmod 600 private_key
             ssh -o StrictHostKeyChecking=no -i private_key "${{secrets.VIAJOU_HOST}}" "
-                   cd RPA/;git pull;./start.sh"
+                   cd RPA/;git pull;"
