@@ -21,7 +21,7 @@ Este repositório contém uma aplicação Python destinada à automação RPA (R
 1. Clone o repositório:
 git clone https://github.com/Systeam-Viajou/RPA-PostgreSQL.git
 
-2. Crie um arquivo `.env` com base no `dotenv_sample.env`.
+2. Crie um arquivo `.env`
 
 3. Instale as dependências:
 pip install -r requirements.txt
